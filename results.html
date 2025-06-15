@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>Bilan Carbone – Résultats détaillés</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <h1>Résultats détaillés du bilan carbone</h1>
+  </header>
+  <main id="container"></main>
+
+  <script>
+    const r = JSON.parse(localStorage.getItem('bilan'));
+    const f = (v,n=3)=>Number(v.toFixed(n));
+
+    let html = '';
+
+    // 1. Dimensions & densité
+    html += `<section>
+      <h2>1. Dimensions et densité</h2>
+      <p><strong>Volume</strong> = ${r.L} m × ${r.l} m × ${r.h} m  
+         = <em>${f(r.vol,6)} m³</em></p>
+      <p><strong>Masse</strong> = ${f(r.vol,6)} m³ × ${r.rho_brique} kg/m³  
+         = <em>${f(r.masse)} kg</em></p>
+    </section>`;
+
+    // 2. Terre nécessaire
+    html += `<section>
+      <h2>2. Terre nécessaire (${r.refus_pct}% refus)</h2>
+      <p><strong>Masse brute</strong> = ${f(r.masse)} kg ÷ (1 – ${r.refus_pct}/100)  
+         = <em>${f(r.mTerre)} kg</em></p>
+      <p><strong>Volume extrait</strong> = ${f(r.mTerre)} kg ÷ ${r.rho_terre} kg/m³  
+         = <em>${f(r.vTerre)} m³</em></p>
+    </section>`;
+
+    // 3. Ajout d’eau
+    html += `<section>
+      <h2>3. Ajout d’eau (${r.pct_eau}% de la masse)</h2>
+      <p><strong>Masse eau</strong> = ${f(r.masse)} kg × ${r.pct_eau}/100  
+         = <em>${f(r.mEau)} kg</em> (0 kg CO₂)</p>
+    </section>`;
+
+    // 4. Distances chantier
+    html += `<section>
+      <h2>4. Distances chantier</h2>
+      <p><strong>AR extraction→usine</strong> = <em>${r.d_terre} km</em></p>
+      <p><strong>AR usine→site</strong>     = <em>${r.d_briques} km</em></p>
+    </section>`;
+
+    // 5. Déplacements ouvriers
+    html += `<section>
+      <h2>5. Déplacements des ouvriers</h2>
+      <p>Distance totale = ${r.jours} × ${r.d_terre} km = <em>${f(r.jours * r.d_terre)} km</em></p>
+      <p>Carburant consommé = (${r.cons_ouv} L/100 km × ${f(r.jours * r.d_terre)} km) ÷ 100  
+         = <em>${f((r.cons_ouv * r.jours * r.d_terre) / 100,2)} L</em></p>
+      <p>
+        Émissions = Carburant (L) × Facteur diesel (2,68 kg CO₂/L) (source ADEME)<br>
+        = ${f((r.cons_ouv * r.jours * r.d_terre) / 100,2)} L × 2,68 kg CO₂/L  
+        = <em>${f(r.eO)} kg CO₂</em>
+      </p>
+    </section>`;
+
+    // 6. Motoculteur thermique
+    html += `<section>
+      <h2>6. Motoculteur thermique</h2>
+      <p>Carburant = ${r.cons_moto} L/h × ${r.h_moto} h = <em>${f(r.cons_moto * r.h_moto)} L</em></p>
+      <p>
+        Émissions = Carburant (L) × Facteur essence (2,31 kg CO₂/L) (source ADEME)<br>
+        = ${f(r.cons_moto * r.h_moto)} L × 2,31 kg CO₂/L  
+        = <em>${f(r.eM)} kg CO₂</em>
+      </p>
+    </section>`;
+
+    // 7. Transport de la terre
+    html += `<section>
+      <h2>7. Transport de la terre</h2>
+      <p>
+        Carburant/tour = (${r.cons_t_terre} L/100 km × ${r.d_terre} km) ÷ 100  
+        = <em>${f((r.cons_t_terre * r.d_terre) / 100,2)} L</em>
+      </p>
+      <p>
+        Émissions/tour = Carburant (L) × Facteur diesel (2,68 kg CO₂/L) (source ADEME)<br>
+        = ${f((r.cons_t_terre * r.d_terre) / 100,2)} L × 2,68 kg CO₂/L  
+        = <em>${f(((r.cons_t_terre * r.d_terre) / 100) * 2.68)} kg CO₂</em>
+      </p>
+      <p>
+        Pour ${r.tours_terre} tours :  
+        = 4 × ${f(((r.cons_t_terre * r.d_terre) / 100) * 2.68)} kg CO₂  
+        = <em>${f(r.eTT)} kg CO₂</em>
+      </p>
+    </section>`;
+
+    // 8. Transport des briques
+    html += `<section>
+      <h2>8. Transport des briques</h2>
+      <p>
+        Même formule que pour la terre, sur ${r.tours_briques} tours :  
+        = <em>${f(r.eTB)} kg CO₂</em> (facteur diesel 2,68 kg CO₂/L) (source ADEME)
+      </p>
+    </section>`;
+
+    // 9. Rapatriement matériel
+    html += `<section>
+      <h2>9. Rapatriement du matériel</h2>
+      <p>
+        Carburant/tour = (${r.cons_rapat} L/100 km × ${r.d_terre*2} km) ÷ 100  
+        = <em>${f((r.cons_rapat * r.d_terre*2) / 100,2)} L</em><br>
+        Émissions/tour = Carburant × Facteur diesel (2,68 kg CO₂/L) (source ADEME)<br>
+        = ${f((r.cons_rapat * r.d_terre*2) / 100,2)} L × 2,68 kg CO₂/L  
+        = <em>${f(((r.cons_rapat * r.d_terre*2) / 100) * 2.68)} kg CO₂</em>
+      </p>
+      <p>
+        Pour ${r.tours_rapat} tours :  
+        = <em>${f(r.eR)} kg CO₂</em>
+      </p>
+    </section>`;
+
+    // 10. Transport palettes
+    html += `<section>
+      <h2>10. Transport des palettes</h2>
+      <p>
+        Carburant = (${r.cons_pal} L/100 km × ${r.d_briques} km) ÷ 100  
+        = <em>${f((r.cons_pal * r.d_briques) / 100,2)} L</em><br>
+        Émissions = Carburant × Facteur diesel (2,68 kg CO₂/L) (source ADEME)<br>
+        = <em>${f(r.eP)} kg CO₂</em>
+      </p>
+    </section>`;
+
+    // 11. Énergie découpe
+    html += `<section>
+      <h2>11. Énergie électrique pour découpe</h2>
+      <p>
+        Énergie = ${r.p_disc} W × ${r.h_disc} h ÷ 1000  
+        = <em>${f((r.p_disc * r.h_disc) / 1000,3)} kWh</em>
+      </p>
+      <p>
+        Émissions = Énergie × Facteur électricité (0,060 kg CO₂/kWh) (source ADEME)<br>
+        = <em>${f(r.eDisc)} kg CO₂</em>
+      </p>
+    </section>`;
+
+    // 12. Machines de production
+    html += `<section>
+      <h2>12. Machines de production</h2>
+      <p>
+        <strong>Multimeco</strong> : ${r.pow_multimeco} kW × ${r.h_multimeco} h ×  
+        Facteur électricité (0,060 kg CO₂/kWh) (source ADEME)<br>
+        = <em>${f(r.eMM)} kg CO₂</em>
+      </p>
+      <p>
+        <strong>MecoTri</strong> : ${r.pow_mecotri} kW × ${r.h_mecotri} h ×  
+        Facteur électricité (0,060 kg CO₂/kWh) (source ADEME)<br>
+        = <em>${f(r.eMT)} kg CO₂</em>
+      </p>
+      <p>
+        <strong>Malaxeur</strong> : ${r.pow_malaxeur} kW × ${r.h_malaxeur} h ×  
+        Facteur électricité (0,060 kg CO₂/kWh) (source ADEME)<br>
+        = <em>${f(r.eMX)} kg CO₂</em>
+      </p>
+      <p><strong>Total machines</strong> = <em>${f(r.eMach)} kg CO₂</em></p>
+    </section>`;
+
+    // 13. Synthèse sous forme de tableau
+    html += `<section>
+      <h2>13. Synthèse des émissions</h2>
+      <table>
+        <thead>
+          <tr><th>Poste</th><th>Émissions (kg CO₂)</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Déplacements ouvriers</td><td>${f(r.eO)}</td></tr>
+          <tr><td>Motoculteur</td><td>${f(r.eM)}</td></tr>
+          <tr><td>Transport terre</td><td>${f(r.eTT)}</td></tr>
+          <tr><td>Transport briques</td><td>${f(r.eTB)}</td></tr>
+          <tr><td>Rapatriement matériel</td><td>${f(r.eR)}</td></tr>
+          <tr><td>Transport palettes</td><td>${f(r.eP)}</td></tr>
+          <tr><td>Découpe disqueuse</td><td>${f(r.eDisc)}</td></tr>
+          <tr><td>Machines production</td><td>${f(r.eMach)}</td></tr>
+          <tr><th>Total projet</th><th>${f(r.total)}</th></tr>
+          <tr><th>Par brique (${r.N})</th><th>${f(r.perBrick,4)}</th></tr>
+        </tbody>
+      </table>
+    </section>`;
+
+    html += `<button onclick="history.back()">Modifier les paramètres</button>`;
+    document.getElementById('container').innerHTML = html;
+  </script>
+</body>
+</html>
